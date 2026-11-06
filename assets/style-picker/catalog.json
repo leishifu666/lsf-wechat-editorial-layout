@@ -1,0 +1,61 @@
+{
+  "intro": [
+    {"id": "01", "name": "翻转贴纸"},
+    {"id": "02", "name": "熔融显字"},
+    {"id": "03", "name": "词语轮播"},
+    {"id": "04", "name": "滚动换页"}
+  ],
+  "chapters": [
+    {
+      "id": "01",
+      "mode": "initialis",
+      "name": "动态字母",
+      "directory": "../chapter-markers/initialis/",
+      "index": "styles.json"
+    },
+    {
+      "id": "02",
+      "mode": "numbers",
+      "name": "动态数字",
+      "directory": "../chapter-markers/numbers/",
+      "index": "styles.json"
+    }
+  ],
+  "stickers": [
+    {
+      "id": "01",
+      "design": "planet-rocket",
+      "name": "星球变火箭",
+      "directory": "../footer-motion/planet-rocket/",
+      "index": "palette-index.json"
+    },
+    {
+      "id": "02",
+      "design": "ai-sticker-ring",
+      "name": "AI 图标旋转环",
+      "directory": "../footer-motion/ai-sticker-ring/",
+      "file": "ai-sticker-ring.gif"
+    },
+    {
+      "id": "00",
+      "design": null,
+      "name": "本篇不加"
+    }
+  ],
+  "backgrounds": [
+    {
+      "id": "01",
+      "name": "日落 · Moonvy"
+    },
+    {
+      "id": "02",
+      "name": "星河",
+      "artwork": "star-river.webp"
+    },
+    {
+      "id": "03",
+      "name": "金雨",
+      "artwork": "gold-rain.webp"
+    }
+  ]
+}
