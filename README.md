@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/lsf-wechat-editorial-layout-cover.png" alt="LSF 公众号排版 Skill · 极简字体标本" width="480" />
+</p>
+
 # LSF 公众号排版 Skill
 
 把长文排成可编辑的微信公众号富文本。用 Dinamo 先选开篇动效、章节标记、文末贴纸和截图背景，再把选择带回 Codex 排版。
