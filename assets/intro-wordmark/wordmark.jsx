@@ -9,6 +9,7 @@ import { createCarousel, createRoll } from './vault-effects.js';
 import { VaultDemo } from './vault-demos.jsx';
 import { captureVault } from './capture-vault.js';
 import { createEmbossBanner, embossReady, prepareLogo } from './emboss-banner.js';
+import { KEY_MS as smearFrameMs, LOOP_KEYS as smearFrames, STILL_KEY as smearStillKey } from '../design-how/smear-type/assets/template/params';
 
 const factories = { tumble: createTumble, molten: createMolten, carousel: createCarousel, roll: createRoll, emboss: createEmbossBanner };
 const introModes = { '01': 'tumble', '02': 'molten', '03': 'carousel', '04': 'roll', emboss: 'emboss' };
@@ -24,6 +25,7 @@ const vaultDurations = {
   'cloud-type': 4080, 'flip-type': 5100, 'warp-type': 3000,
   'stack-type': 1920, 'rush-type': 3400, 'bond-type': 4000, 'dash-cascade': 2500,
   'chroma-glow': 10560,
+  'smear-type': smearFrameMs * smearFrames,
 };
 const wordCycles = new Set(['blur-glow', 'pixel-threshold', 'swing-type', 'dash-cascade']);
 const gifColors = { tumble: 64, emboss: 64, 'chroma-glow': 48, 'dot-cut': 64 };
@@ -160,6 +162,15 @@ export function Wordmark({ mode, text, wide = false, thumbnail = false, ...optio
     role="img" aria-label={Array.isArray(text) ? text.join(' ') : text} />;
 }
 
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
 function gifWriter(number, name, colors) {
   const { width, height } = banner;
   const encoder = GIFEncoder();
@@ -170,17 +181,12 @@ function gifWriter(number, name, colors) {
     },
     save() {
       encoder.finish();
-      const url = URL.createObjectURL(new Blob([encoder.bytes()], { type: 'image/gif' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${number}-${name}.gif`;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      downloadBlob(new Blob([encoder.bytes()], { type: 'image/gif' }), `${number}-${name}.gif`);
     },
   };
 }
 
-async function downloadGif(mode, text, gif, logo) {
+async function renderWordmarkFrames(mode, text, onFrame, logo, still) {
   await Promise.all([loadFonts(), mode === 'emboss' ? embossReady : null]);
   const { width, height } = banner;
   const canvas = Object.assign(document.createElement('canvas'), banner);
@@ -189,15 +195,29 @@ async function downloadGif(mode, text, gif, logo) {
   const duration = renderer.duration?.() ?? (mode === 'tumble' ? 1760 : 3000);
   const delay = 40;
   try {
+    if (still) {
+      renderer.draw(mode === 'molten' ? 1600 : 600);
+      onFrame(context.getImageData(0, 0, width, height).data);
+      return;
+    }
     for (let time = 0; time < duration; time += delay) {
       renderer.draw(time);
       const pixels = context.getImageData(0, 0, width, height).data;
-      gif.write(pixels, Math.min(delay, duration - time));
+      onFrame(pixels, Math.min(delay, duration - time));
       if (time % 200 === 0) await new Promise(resolve => setTimeout(resolve, 0));
     }
   } finally {
     renderer.destroy();
   }
+}
+
+async function savePng(pixels, filename) {
+  const { width, height } = banner;
+  const canvas = Object.assign(document.createElement('canvas'), banner);
+  canvas.getContext('2d').putImageData(new ImageData(pixels, width, height), 0, 0);
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('PNG encoding failed');
+  downloadBlob(blob, filename);
 }
 
 const savedSignatureKey = 'lsf-wechat-editorial-layout:signature';
@@ -215,7 +235,7 @@ function IntroEditor({ author, preview, presets, articleLines, library }) {
     }
   });
   const [saveStatus, setSaveStatus] = useState('');
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState('');
   const [status, setStatus] = useState('');
   const [presetId, setPresetId] = useState(presets[0].id);
   const deferredArticle = host.dataset.articleWorkflow === 'deferred';
@@ -256,6 +276,10 @@ function IntroEditor({ author, preview, presets, articleLines, library }) {
     }
     return () => { active = false; };
   }, [logoUrl]);
+
+  useEffect(() => {
+    host.dispatchEvent(new Event('intro-preset-change'));
+  }, [presetId]);
 
   useEffect(() => {
     host.readIntroState = () => ({ value, presetId, source, articleDraft, manualDraft, logoUrl, articleWorkflow: deferredArticle ? 'deferred' : undefined, hasScenes });
@@ -310,28 +334,33 @@ function IntroEditor({ author, preview, presets, articleLines, library }) {
     }
   }
 
-  async function exportSelected() {
-    setExporting(true);
+  async function exportSelected(format) {
+    const still = format === 'PNG';
+    setExporting(format);
     setStatus('');
     try {
       const selected = choices.find(entry => entry.id === presetId);
-      const gif = gifWriter(selected.number, selected.name, gifColors[mode || presetId] ?? 128);
+      const gif = still ? null : gifWriter(selected.number, selected.name, gifColors[mode || presetId] ?? 128);
+      let stillPixels;
+      const onFrame = still ? pixels => { stillPixels = pixels; } : gif.write;
       if (mode) {
-        await downloadGif(mode, effectiveText, gif, logo);
+        await renderWordmarkFrames(mode, effectiveText, onFrame, logo, still);
       } else {
         const scenes = wordCycles.has(presetId) && Array.isArray(effectiveText) ? effectiveText.length : 1;
         await captureVault({
           id: presetId, text: effectiveText, ...banner, bundle: previewBundle,
-          duration: vaultDurations[presetId] * scenes, onFrame: gif.write,
+          duration: vaultDurations[presetId] * scenes, onFrame, still,
+          ...(presetId === 'smear-type' ? { frameMs: smearFrameMs, stillAt: smearStillKey * smearFrameMs } : {}),
         });
       }
-      gif.save();
-      setStatus('GIF 已导出');
+      if (still) await savePng(stillPixels, `${selected.number}-${selected.name}.png`);
+      else gif.save();
+      setStatus(`${format} 已导出`);
     } catch (error) {
       console.error(error);
-      setStatus('GIF 导出失败，请重试');
+      setStatus(`${format} 导出失败，请重试`);
     } finally {
-      setExporting(false);
+      setExporting('');
     }
   }
 
@@ -353,16 +382,14 @@ function IntroEditor({ author, preview, presets, articleLines, library }) {
 
   const styleGallery = <div className="choices intro-choices">{choices.map(choice)}</div>;
   const sourceControls = <div className="intro-source">
-    <span id="intro-source-label">文案来源</span>
-    <div className="intro-source-options" role="group" aria-labelledby="intro-source-label">
-      <button type="button" aria-pressed={source === 'manual'} onClick={() => setSource('manual')}>手写署名</button>
+    <div className="segmented" role="group" aria-label="文案来源">
+      <button type="button" aria-pressed={source === 'manual'} onClick={() => setSource('manual')}>自己写</button>
       <button type="button" aria-pressed={source === 'article'} onClick={() => setSource('article')}>Agent 提炼文章</button>
     </div>
   </div>;
   const signatureField = <>
-    <label className="intro-label" htmlFor="intro-text">署名文字</label>
     <div className="intro-input-row">
-      <input id="intro-text" type="text" value={value} placeholder={author} maxLength={32}
+      <input id="intro-text" type="text" aria-label="署名文字" value={value} placeholder={author} maxLength={32}
         onChange={event => {
           setValue(event.target.value);
           if (manualDraft !== null) {
@@ -374,6 +401,7 @@ function IntroEditor({ author, preview, presets, articleLines, library }) {
         }} />
       <button type="button" className="intro-save" onClick={saveSignature}>保存</button>
     </div>
+    <p className="field-hint">文字会实时显示在文章开篇</p>
     <p className="intro-status intro-save-status" role="status">{saveStatus}</p>
   </>;
   const sceneField = (source === 'article' || sceneModes.has(mode) || vaultEffect?.kind === 'scenes') &&
@@ -396,9 +424,11 @@ function IntroEditor({ author, preview, presets, articleLines, library }) {
       <span className="intro-status" role="status">{logoStatus}</span>
     </div>}
     <div className="intro-actions">
-      <button type="button" className="intro-export" disabled={exporting || previewPending || (mode === 'emboss' && logoUrl && !logo)} onClick={exportSelected}>
-        {exporting ? '正在导出' : '导出所选 GIF'}
-      </button>
+      {['GIF', 'PNG'].map(format => <button key={format} type="button" className="intro-export-btn"
+        disabled={Boolean(exporting || previewPending || (mode === 'emboss' && logoUrl && !logo))}
+        onClick={() => exportSelected(format)}>
+        {exporting === format ? '正在导出' : `导出 ${format}`}
+      </button>)}
       <p className="intro-status" role="status">{status}</p>
     </div>
   </>;
@@ -410,22 +440,23 @@ function IntroEditor({ author, preview, presets, articleLines, library }) {
         ? <Wordmark key={mode} mode={mode} text={effectiveText} wide logo={mode === 'emboss' ? logo : undefined} />
         : <VaultDemo key={presetId} id={presetId} text={effectiveText} />, preview)}
     <input type="hidden" data-intro-text value={introText} />
-    {deferredArticle ? <>
-      <div id="intro-copy-settings" className="intro-copy-settings" tabIndex={-1}>
-        {sourceControls}
-        {wantsArticle ? sceneField : signatureField}
-        {!wantsArticle && sceneField}
-        {articlePending && <p className="intro-status article-pending-hint">复制选择后，交给 Agent 按文章提炼</p>}
-      </div>
-      {styleGallery}
-      {effectControls}
-    </> : <>
-      {signatureField}
+    <div className="style-step" id="intro-copy-settings">
+      <div className="step-head"><span className="step-label"><b aria-hidden="true">1</b>文案来源</span></div>
       {sourceControls}
-      {sceneField}
-      {effectControls}
+    </div>
+    <div className="style-step">
+      <div className="step-head">
+        <span className="step-label"><b aria-hidden="true">2</b>{wantsArticle ? '文章短句' : '署名文字'}</span>
+      </div>
+      {wantsArticle ? sceneField : signatureField}
+      {!wantsArticle && sceneField}
+      {articlePending && <p className="field-hint">复制选择后，交给 Agent 按文章提炼</p>}
+    </div>
+    <div className="style-step">
+      <div className="step-head"><span className="step-label"><b aria-hidden="true">3</b>动效</span></div>
       {styleGallery}
-    </>}
+      {effectControls}
+    </div>
   </>;
 }
 

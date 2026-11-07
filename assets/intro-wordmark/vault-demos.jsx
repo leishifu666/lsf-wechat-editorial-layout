@@ -43,6 +43,7 @@ import DashCascadeCard from './dash-cascade-card';
 import { dashCascadeProps } from './dash-cascade-layout';
 import ChromaGlowCard from '../design-how/chroma-glow/assets/template/card';
 import { setPreviewCopy as setChromaGlowCopy } from '../design-how/chroma-glow/assets/template/params';
+import SmearTypeCard from '../design-how/smear-type/assets/template/card';
 
 function chunks(text, slots) {
   const glyphs = Array.from(text);
@@ -55,6 +56,16 @@ function wordChunks(text, slots) {
   const words = text.split(/\s+/);
   if (words.length === 1) return chunks(text, slots);
   return words.length <= slots ? words : [...words.slice(0, slots - 1), words.slice(slots - 1).join(' ')];
+}
+
+function smearProps([text]) {
+  const glyphs = Array.from(text);
+  if (glyphs.length <= 11) return { lines: [text, ''], weight: 800 };
+  const middle = Math.floor(glyphs.length / 2);
+  const breaks = glyphs.map((glyph, index) => /\s/.test(glyph) ? index : -1)
+    .filter(index => index >= glyphs.length / 3 && index <= glyphs.length * 2 / 3);
+  const split = breaks.sort((a, b) => Math.abs(a - middle) - Math.abs(b - middle))[0] ?? middle;
+  return { lines: [glyphs.slice(0, split).join('').trim(), glyphs.slice(split).join('').trim()], weight: 800 };
 }
 
 const demos = {
@@ -84,6 +95,7 @@ const demos = {
   'bond-type': { Card: BondTypeCard, setCopy: setBondTypeCopy },
   'dash-cascade': { Card: DashCascadeCard, props: dashCascadeProps },
   'chroma-glow': { Card: ChromaGlowCard, setCopy: setChromaGlowCopy },
+  'smear-type': { Card: SmearTypeCard, props: smearProps },
 };
 
 export function VaultDemo({ id, text }) {

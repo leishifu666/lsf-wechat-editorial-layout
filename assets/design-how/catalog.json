@@ -154,5 +154,11 @@
     "number": "30",
     "name": "色散辉光",
     "kind": "scenes"
+  },
+  {
+    "id": "smear-type",
+    "number": "31",
+    "name": "流墨显字",
+    "kind": "text"
   }
 ]

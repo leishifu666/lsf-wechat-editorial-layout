@@ -96,7 +96,7 @@ async function paintMarkup(scene, win, ctx, width, height) {
   ctx.drawImage(image, 0, 0);
 }
 
-export async function captureVault({ id, text, width, height, bundle, duration, onFrame }) {
+export async function captureVault({ id, text, width, height, bundle, duration, onFrame, still = false, frameMs = 40, stillAt }) {
   const frame = document.createElement('iframe');
   frame.setAttribute('aria-hidden', 'true');
   frame.tabIndex = -1;
@@ -129,7 +129,13 @@ export async function captureVault({ id, text, width, height, bundle, duration, 
     if (!scene) throw new Error('GIF scene did not mount');
     await doc.fonts.ready;
     await yieldTask();
-    const delay = 40;
+    const assetSurface = scene.querySelector('canvas[data-export-ready]');
+    if (assetSurface) {
+      const deadline = performance.now() + 5000;
+      while (assetSurface.dataset.exportReady === 'pending' && performance.now() < deadline) await yieldTask();
+      if (assetSurface.dataset.exportReady !== 'true') throw new Error('Animation textures did not load');
+    }
+    const delay = frameMs;
     const gifDelay = duration > 8000 ? 80 : delay;
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -167,6 +173,16 @@ export async function captureVault({ id, text, width, height, bundle, duration, 
       }
 
       const pixels = ctx.getImageData(0, 0, width, height).data;
+      if (still) {
+        if (time < (stillAt ?? Math.min(600, duration / 2))) continue;
+        for (let i = 4; i < pixels.length; i += 16) {
+          if (pixels[i] !== pixels[0] || pixels[i + 1] !== pixels[1] || pixels[i + 2] !== pixels[2]) {
+            onFrame(pixels);
+            return;
+          }
+        }
+        continue;
+      }
       if (!visible) {
         for (let i = 4; i < pixels.length; i += 16) {
           if (pixels[i] !== pixels[0] || pixels[i + 1] !== pixels[1] || pixels[i + 2] !== pixels[2]) {
@@ -177,7 +193,7 @@ export async function captureVault({ id, text, width, height, bundle, duration, 
       }
       onFrame(pixels, Math.min(gifDelay, duration - time));
     }
-    if (!visible) throw new Error('GIF scene did not render');
+    if (!visible) throw new Error('Opening animation did not render');
   } finally {
     frame.remove();
   }

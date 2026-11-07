@@ -14,7 +14,7 @@ python -X utf8 scripts/pick-numeric-chapter-markers.py --chapters 4
 
 命令输出每节的数字、样式、素材路径和随机种子。首次排版抽一次，保留输出；素材池相同时，使用 `--seed` 可重现同一次抽取。首轮用过的样式从候选里移除，池空后重新抽，首个候选也避开上一节。
 
-按输出通过公众号图片库上传 GIF，再套用 [正文模板](../../assets/article-template.html) 的 42 × 42px 居中标记。数字填入 `CHAPTER_LABEL` 和图片替代文本。保存后用微信实际预览确认动效。图片库中的 GIF 保留透明背景，文章截图配图仍按 Moonvy 的流程处理。
+按输出通过公众号图片库上传 GIF，再套用 [正文模板](../../assets/article-template.html) 的 42 × 42px 居中标记。数字填入 `CHAPTER_LABEL` 和图片替代文本。保存后用微信实际预览确认动效。图片库中的 GIF 保留透明背景，文章截图配图走 [内置背景流程](../style-picker.md#截图背景)。
 
 ## 重渲染和两位以上数字
 

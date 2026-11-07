@@ -19,7 +19,7 @@
 | <img src="assets/readme-preview/intro-01-flip.gif" alt="01 翻转贴纸" width="365" /> | <img src="assets/readme-preview/intro-07-color.gif" alt="07 彩色字块" width="365" /> |
 
 <details>
-<summary>展开全部 28 款开篇动效</summary>
+<summary>展开全部 29 款开篇动效</summary>
 
 <table>
   <tr>
@@ -64,6 +64,9 @@
     <td align="center"><img src="assets/design-how/thumbnails/dash-cascade.webp" alt="29 虚线展开" width="170" /><br />29 虚线展开</td>
     <td align="center"><img src="assets/design-how/thumbnails/chroma-glow.webp" alt="30 色散辉光" width="170" /><br />30 色散辉光</td>
   </tr>
+  <tr>
+    <td align="center"><img src="assets/design-how/thumbnails/smear-type.webp" alt="31 流墨显字" width="170" /><br />31 流墨显字</td>
+  </tr>
 </table>
 
 </details>
@@ -101,7 +104,7 @@
 python -X utf8 scripts/build-style-preview.py --author "你的署名" --output "preview.html"
 ```
 
-用浏览器打开 `preview.html`。选样页包含 28 款开篇动效、动态字母与数字、两款文末贴纸和三款截图背景。文案、命名预设及 640 × 260 GIF 导出均可在预览页操作。选「Agent 提炼文章」后，可先复制提炼任务，再回填确认的短句。
+用浏览器打开 `preview.html`。选样页包含 29 款开篇动效、动态字母与数字、三款文末贴纸和 28 款截图背景。可导出 640 × 260 的开篇 GIF 或 PNG，也可备份和导入命名预设。选题明确后先打开 HTML 选样页。已有文章时用 `--article` 带入标题、正文和本地配图，按正式模板的字号与留白预览。截图可换背景并逐张导出 PNG。
 
 - [选样和生成参数](references/style-picker.md)
 - [正文排版基线](references/article-layout.md)
