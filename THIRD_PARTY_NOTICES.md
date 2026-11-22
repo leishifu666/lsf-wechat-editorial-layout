@@ -7,3 +7,4 @@
 - **趣味贴纸旋转环** · 原始 HTML 由用户提供，使用 [with icons](https://withicons.com/about.html) 的 Clay 和 Chrome 图标。[with icons MIT 许可](assets/footer-motion/fun-sticker-ring/WITHICONS-LICENSE.txt)
 - **示例图片** · 截图与背景用来展示版式。截图中的界面、图形及第三方品牌仍归其各自权利人所有。
 - **内置截图背景** · 柔光参数来源于 Moonvy「旷」Aura 公开预设，由本地渲染。馆藏图来自大都会艺术博物馆、美国国家美术馆及芝加哥艺术博物馆的公有领域藏品。各款出处见 [背景目录](references/kuang-screenshots.md)。
+- **文章风格参考（数字生命卡兹克）** · `references/article-styles/01-khazix.md` 基于开源项目 [KKKKhazix/khazix-skills](https://github.com/KKKKhazix/khazix-skills) 中的 `khazix-writer` 蒸馏适配，遵循原仓库 MIT 许可（Copyright (c) 2026 数字生命卡兹克）。

@@ -10,8 +10,18 @@ from article_preview import article_css, image_uri, load_article, render_article
 ASSETS = Path(__file__).resolve().parents[1] / "assets" / "style-picker"
 BACKGROUNDS = ASSETS / "backgrounds"
 INTRO_BUNDLE = ASSETS.parent / "intro-wordmark" / "wordmark.bundle.js"
-TITLES = {"intro": "开篇动态署名", "chapters": "章节标题样式", "backgrounds": "截图背景", "stickers": "文末贴纸"}
-HEADINGS = {"intro": "开篇署名", "chapters": "章节标题"}
+TITLES = {"article-style": "文章风格", "intro": "开篇动态署名", "chapters": "章节标题样式", "backgrounds": "截图背景", "stickers": "文末贴纸"}
+HEADINGS = {"article-style": "文章风格", "intro": "开篇署名", "chapters": "章节标题"}
+
+
+def default_article_styles_catalog():
+    script_path = Path(__file__).resolve()
+    for parent_index in (1, 3):
+        if len(script_path.parents) > parent_index:
+            candidate = script_path.parents[parent_index] / "references" / "article-styles" / "catalog.json"
+            if candidate.is_file():
+                return candidate
+    return script_path.parents[1] / "references" / "article-styles" / "catalog.json"
 PRESETS = """<section id="studio-presets" class="presets" aria-labelledby="presets-title" tabindex="-1">
 <h2 class="group-title" id="presets-title">预设</h2>
 <form class="preset-tools" id="preset-form">
@@ -198,6 +208,33 @@ def render_screenshot(block, index, multiple, bundled_sample):
     ])
 
 
+def render_article_styles(options):
+    choices = []
+    for index, option in enumerate(options):
+        option_id = escape(option["id"])
+        label = escape(f'{option["id"]} {option["name"]}')
+        tagline = escape(option.get("tagline", ""))
+        quote = escape(option.get("sample_quote", ""))
+        rule_file = escape(option.get("rule_file", ""))
+        slug = escape(option.get("slug", ""))
+        checked = " checked" if index == 0 else ""
+        choices.append(
+            f'<label class="choice"><input type="radio" name="article-style" value="{option_id}"'
+            f' data-rule="{rule_file}" data-slug="{slug}"{checked}>'
+            '<span class="choice-card choice-style-card">'
+            f'<span class="choice-name">{label}</span>'
+            f'<span class="style-tagline">{tagline}</span>'
+            f'<span class="style-quote" aria-hidden="true">“{quote}”</span>'
+            '</span></label>'
+        )
+    return "\n".join([
+        '<fieldset class="style-group" id="article-style-options">',
+        group_heading("article-style"),
+        '<div class="choices choices-article-style">', *choices, '</div>',
+        '</fieldset>',
+    ])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--group", choices=("all", "motion", *TITLES), default="all")
@@ -206,6 +243,8 @@ def main():
     parser.add_argument("--screenshot", type=Path, help="Preview a different real screenshot")
     parser.add_argument("--author", default="雷师傅", help="Default intro wordmark text")
     parser.add_argument("--intro-line", action="append", help="A confirmed opening line to preload (repeat up to 4 times)")
+    parser.add_argument("--article-styles", type=Path, help="Path to article-styles catalog.json")
+    parser.add_argument("--stage", choices=("pre-draft", "final"), default="pre-draft", help="Preview workflow stage")
     args = parser.parse_args()
     if not args.author.strip():
         parser.error("--author must contain a name")
@@ -232,10 +271,14 @@ def main():
         parser.error(str(error))
 
     catalog = read_json(ASSETS / "catalog.json")
+    styles_path = args.article_styles or default_article_styles_catalog()
+    article_styles = read_json(styles_path) if styles_path and styles_path.is_file() else []
     groups = {
         "all": list(TITLES),
         "motion": ["intro", "chapters", "stickers"],
     }.get(args.group, [args.group])
+    if not article_styles and "article-style" in groups:
+        groups.remove("article-style")
     if not screenshots and "backgrounds" in groups:
         groups.remove("backgrounds")
     if not article["chapters"] and "chapters" in groups:
@@ -248,7 +291,9 @@ def main():
     chapter_markers = [""] * len(article["chapters"])
     stickers = []
     for group in groups:
-        if group == "intro":
+        if group == "article-style":
+            sections.append(render_article_styles(article_styles))
+        elif group == "intro":
             sections.append(render_intro(catalog[group], args.author.strip(), article_lines))
             intro = '<div class="intro-stage" id="preview-intro"></div>'
         elif group == "backgrounds":

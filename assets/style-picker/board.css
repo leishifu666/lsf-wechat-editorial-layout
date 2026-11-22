@@ -237,3 +237,16 @@ input[type=text]:focus-visible,textarea:focus-visible{outline:0;box-shadow:inset
 .choice-pager .pager-elsewhere{white-space:nowrap}
 .group-head .choice-pager,.step-head .choice-pager{flex-shrink:0}
 @media (max-width:719px){.choice-pager .pager-elsewhere{height:36px}}
+
+/* ===== 文章风格选样卡 ===== */
+.choices-article-style{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:12px}
+.choices-article-style .choice{display:flex;height:100%}
+.choice-style-card{width:100%;height:124px;padding:14px 14px 11px;border-radius:6px;background:var(--paper);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;gap:6px;overflow:hidden;transition:box-shadow .15s var(--ease),transform .18s var(--ease)}
+.choice:hover .choice-style-card{box-shadow:inset 0 0 0 1px var(--soft)}
+.choice>input:checked+.choice-style-card{box-shadow:inset 0 0 0 2px var(--hot)}
+.choice>input:focus-visible+.choice-style-card{outline:2px solid var(--ink);outline-offset:2px}
+.choice-style-card .choice-name{font-size:14px;line-height:20px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.choice>input:checked+.choice-style-card .choice-name{color:var(--hot)}
+.choice-style-card .style-tagline{font-size:12px;line-height:1.45;font-weight:400;color:#4E545F;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.choice-style-card .style-quote{margin-top:auto;padding-top:7px;border-top:1px solid var(--line);font-size:11px;line-height:1.35;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:719px){.choices-article-style{grid-template-columns:minmax(0,1fr)}}

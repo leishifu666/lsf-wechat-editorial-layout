@@ -13,8 +13,8 @@ const presetPanel = document.getElementById('studio-presets');
 const presetToggle = document.querySelector('.preset-toggle');
 const jumpButton = document.querySelector('#jump-preview');
 const key = 'lsf-wechat-editorial-layout:named-presets-v1';
-// 与左栏、文章顺序一致：章节 → 截图背景 → 文末贴纸
-const groups = ['chapters', 'screenshot-background', 'stickers']
+// 与左栏、文章顺序一致：文章风格 → 章节 → 截图背景 → 文末贴纸
+const groups = ['article-style', 'chapters', 'screenshot-background', 'stickers']
   .filter(group => form.elements.namedItem(group));
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const twoPane = matchMedia('(min-width: 720px)');
@@ -157,7 +157,7 @@ function readPresetBackup(text) {
     return {
       id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
       name: name.trim(),
-      selection: Object.fromEntries(['chapters', 'screenshot-background', 'stickers']
+      selection: Object.fromEntries(['article-style', 'chapters', 'screenshot-background', 'stickers']
         .filter(group => typeof selection[group] === 'string').map(group => [group, selection[group]])),
       intro: {value: intro.value, presetId: intro.presetId, source: intro.source,
         articleDraft: intro.articleDraft ?? '', manualDraft: intro.manualDraft ?? null,
@@ -480,6 +480,10 @@ form.addEventListener('submit', async event => {
       return;
     }
     lines.push(`${title}：${selected.closest('.choice').querySelector('.choice-name').textContent}`);
+    if (selected.name === 'article-style') {
+      if (selected.dataset.rule) lines.push(`文章风格规则：${selected.dataset.rule}`);
+      lines.push('写作流程：请先按所选文章风格规则撰写/改写公众号初稿并完成四层自检，再按以下排版样式成稿');
+    }
     if (intro && group.contains(intro)) {
       const state = intro.readIntroState?.();
       if (state?.source === 'article') {
