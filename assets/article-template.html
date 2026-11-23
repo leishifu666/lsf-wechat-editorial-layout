@@ -1,4 +1,13 @@
 <section data-layout="body" style="font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue','PingFang SC','Microsoft YaHei',sans-serif;color:#1a1a1a;line-height:1.4;letter-spacing:0.544px;padding:0 6px;margin:0;">
+  <!-- 开篇顺序固定：品牌署名 → 完整视频（有已确认成片时）→ 首段正文。没有品牌署名时，视频就是正文第一项。 -->
+  <p data-layout="wordmark" style="margin:0 0 24px;text-align:center;line-height:0;">
+    <img data-layout="wordmark-image" src="{{UPLOADED_INTRO_GIF_URL}}" alt="{{INTRO_WORDMARK_TEXT}}" width="640" height="260" data-type="gif" data-w="640" data-ratio="0.40625" style="display:block;width:100%;max-width:100%;height:auto;border-radius:8px;vertical-align:top;"/>
+  </p>
+  <section data-layout="opening-video" style="margin:0 0 24px;">
+    <!-- 本地预览才用 video；复制到公众号的富文本不带本地视频路径，只保留下面这个插入位置，到后台用「视频」插入已确认成片。 -->
+    <video data-layout="video" controls playsinline preload="metadata" src="{{LOCAL_PREVIEW_VIDEO_PATH}}" style="display:block;width:100%;max-width:100%;height:auto;border-radius:8px;margin:0;background:#0c0c0d;"></video>
+    <p data-layout="video-placeholder" style="margin:0;padding:14px 16px;border:1px dashed #5e8e3e;border-radius:8px;background:#f6faf3;color:#2f4f1d;font-size:13px;font-weight:400;line-height:1.6;text-align:center;">【公众号原生视频插入位置：请在此处（品牌署名之后、首段正文之前）通过公众号后台「视频」插入已确认成片：{{VIDEO_FILE_NAME}}】</p>
+  </section>
   <p data-layout="first" style="font-size:16px;font-weight:300;line-height:1.9;margin:0 0 40px;text-align:left;">{{INTRO}}</p>
   <section style="text-align:center;margin:0;">
     <p data-layout="marker" style="margin:40px 0 0;height:66px;box-sizing:border-box;padding:12px 0 0;text-align:center;line-height:1;">

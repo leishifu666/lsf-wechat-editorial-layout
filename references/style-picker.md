@@ -24,6 +24,7 @@
 ```json
 {
   "title": "本篇文章标题",
+  "video": {"video": "media/full-video.mp4", "caption": "本期完整视频"},
   "intro": ["开头第一段"],
   "chapters": [
     {
@@ -31,6 +32,10 @@
       "paragraphs": [
         "正文里的<strong>重点</strong>。",
         {"screenshot": "images/screen.png", "caption": "实际操作界面"},
+        "菜单展开这类变化，紧跟一段实录。",
+        {"gif": "images/menu.gif", "caption": "菜单展开再收起的实录"},
+        {"gif": "images/menu-framed.gif", "framed": false, "caption": "已用 frame_media.py 加框的实录"},
+        {"video": "images/clip.mp4", "caption": "本段对应的视频片段"},
         {"image": "images/photo.jpg", "caption": "普通配图"}
       ]
     }
@@ -42,7 +47,11 @@
 python -X utf8 scripts/build-style-preview.py --article "稿件.json" --output "公众号稿件预览.html"
 ```
 
-配图路径相对于 JSON 文件。普通 `image` 保持原图，`screenshot` 应用所选背景。多张截图的更换与导出按钮在各图下方。稿件没有章节或截图时，自动略过相应选项。正式稿仍按本篇抽取记录生成章节标记。
+配图路径相对于 JSON 文件。`video`（顶层）是本期已确认的完整视频，也可以用命令行 `--video 成片.mp4 --video-caption "图注"` 指定；顶层没写时，`intro` 里的第一个视频块会被提升为开篇视频。无论怎么写，开篇都按「署名 → 完整视频 → 首段」排列，没有署名时视频是第一项。`screenshot` 和 `gif`（默认 `framed: true`）应用所选背景，GIF 会在背景框内保持多帧循环播放；`framed: false` 表示已经加好框，原样展示；普通 `image` 保持原图。`video` 块写在章节里时，作为紧跟对应段落的视频片段。视频不超过 25 MB 时嵌入页面，更大的用相对输出文件的路径引用。素材路径为空、占位或文件缺失会直接报错。
+
+多张截图的更换与导出按钮在各图下方；实录 GIF 在网页里只能预览，成品用 [frame_media.py](../scripts/frame_media.py) 导出。稿件没有章节或截图时，自动略过相应选项。正式稿仍按本篇抽取记录生成章节标记。
+
+预览底部的「复制到公众号」按正式模板的内联样式生成富文本，同时写入 `text/html` 与 `text/plain`。视频不会随富文本复制，在署名之后留插入位置；未加框的原始 GIF 会提示先用 `frame_media.py` 加框。
 
 ## 生成与更新
 

@@ -528,3 +528,127 @@ form.addEventListener('submit', async event => {
     } else copyStatus.textContent = '浏览器不允许自动复制，文字已选中，请手动复制';
   }
 });
+
+
+/* ===== 开篇视频：转成内存 Blob，保证任意 HTTP / file 预览下都能播放和拖动进度条 ===== */
+for (const video of document.querySelectorAll('video.demo-video[data-src]')) {
+  const source = video.dataset.src;
+  fetch(source).then(response => {
+    if (!response.ok) throw new Error(String(response.status));
+    return response.blob();
+  }).then(blob => {
+    video.src = URL.createObjectURL(blob);
+  }).catch(() => { video.src = source; }); // file:// 下取不到相对路径时，直接交给 video 自己加载
+}
+
+/* ===== 复制到公众号：按正式模板的内联样式生成富文本 ===== */
+const wechatCopy = document.getElementById('copy-wechat-html');
+const layoutStyles = JSON.parse(document.getElementById('article-layout-styles')?.textContent || '{}');
+const esc = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const styled = role => `data-layout="${role}" style="${esc(layoutStyles[role] || '')}"`;
+
+function wechatBlocks(article) {
+  const out = [];
+  const stats = {images: 0, videoSlots: 0, pendingGifs: 0, wordmark: false};
+  const caption = text => { if (text) out.push(`<p ${styled('caption')}>${esc(text.replace(/[。.]+$/, ''))}</p>`); };
+  const image = (src, alt) => {
+    stats.images++;
+    out.push(`<img ${styled('image')} src="${src}" alt="${esc(alt)}"/>`);
+  };
+  const emit = node => {
+    if (node.hidden || node.matches?.('[data-preview-only]')) return;
+    if (node.id === 'preview-intro') {
+      const pic = node.querySelector('canvas');
+      if (pic) {
+        stats.wordmark = true;
+        out.push(`<p ${styled('wordmark')}><img ${styled('wordmark-image')} src="${pic.toDataURL('image/png')}" alt="${esc(intro?.readIntroState?.()?.value || intro?.dataset.author || '')}" width="640" height="260"/></p>`);
+      }
+      return;
+    }
+    if (node.matches('[data-wechat-video]')) {
+      // 本地视频路径、blob: 和 data:video 都不进入富文本，只留下带文件名的插入位置
+      const slot = node.querySelector('[data-wechat-video-placeholder]');
+      stats.videoSlots++;
+      out.push(`<section ${styled('opening-video')}><p ${styled('video-placeholder')}>${esc(slot.textContent)}</p></section>`);
+      caption(node.querySelector('figcaption')?.textContent.trim());
+      return;
+    }
+    if (node.matches('p.demo-text')) {
+      const copy = node.cloneNode(true);
+      copy.querySelectorAll('strong').forEach(strong => strong.setAttribute('style', layoutStyles.emphasis || ''));
+      const role = node.classList.contains('is-first') ? 'first' : 'paragraph';
+      out.push(`<p ${styled(role)}>${copy.innerHTML.replace(/<strong style="/g, '<strong data-layout="emphasis" style="')}</p>`);
+      return;
+    }
+    if (node.matches('section.demo-section')) {
+      const marker = node.querySelector('.chapter-heading');
+      if (marker) {
+        const glyphs = [...marker.querySelectorAll('img')].filter(glyph => !glyph.closest('[hidden]'));
+        const label = marker.querySelector('[role="img"]:not([hidden])')?.getAttribute('aria-label') || '';
+        out.push(`<section style="text-align:center;margin:0;"><p ${styled('marker')}>${glyphs.map(glyph =>
+          `<img ${styled('glyph')} src="${glyph.src}" alt="${esc(label)}" width="42" height="42"/>`).join('')}</p></section>`);
+      }
+      const heading = node.querySelector('h2');
+      if (heading) out.push(`<h2 ${styled('heading')}>${esc(heading.textContent)}</h2>`);
+      [...node.children].filter(child => child !== marker && child !== heading).forEach(emit);
+      return;
+    }
+    if (node.matches('figure.background-preview')) {
+      const text = node.querySelector('figcaption')?.textContent.trim() || '';
+      if (node.classList.contains('is-gif')) {
+        // 网页里只能拿到未加框的原始动图；成品应由 frame_media.py 导出后以 framed:false 带入
+        const original = node.querySelector('.screenshot-original');
+        stats.pendingGifs++;
+        stats.images++;
+        out.push(`<img ${styled('image')} data-frame-pending="true" src="${original.src}" alt="${esc(text)}"/>`);
+      } else {
+        image(node.querySelector('canvas').toDataURL('image/png'), text);
+      }
+      caption(text);
+      return;
+    }
+    if (node.matches('figure')) {
+      const pic = node.querySelector('img');
+      if (pic) image(pic.src, pic.alt);
+      caption(node.querySelector('figcaption')?.textContent.trim());
+      return;
+    }
+    if (node.matches('footer.demo-footer')) {
+      const sticker = [...node.querySelectorAll('img')].find(item => !item.hidden);
+      if (sticker) {
+        stats.images++;
+        out.push(`<p style="text-align:center;margin:56px 0 0;"><img src="${sticker.src}" alt="" style="display:inline-block;width:${sticker.dataset.option === '01' ? 96 : 144}px;max-width:100%;height:auto;"/></p>`);
+      }
+    }
+  };
+  [...article.querySelector('.article-body').children].forEach(emit);
+  return {html: `<section ${styled('body')}>${out.join('\n')}</section>`, stats};
+}
+
+wechatCopy?.addEventListener('click', async () => {
+  const article = document.getElementById('studio-article');
+  const {html, stats} = wechatBlocks(article);
+  window.__lastWechatRichTextHtml = html;
+  const plain = [...article.querySelectorAll('.article-body p.demo-text, .article-body h2')].map(item => item.textContent.trim()).join('\n\n');
+  const notes = [`已复制公众号富文本（${stats.images} 张图）`];
+  if (stats.videoSlots) notes.push('视频没有随富文本带走，已在品牌署名之后、首段正文之前保留插入位置，请到公众号后台用「视频」插入已确认成片');
+  if (stats.pendingGifs) notes.push(`有 ${stats.pendingGifs} 个实录 GIF 是未加框的原始动图，请先用 frame_media.py 加框并以 framed:false 带入`);
+  const message = notes.join('；');
+  wechatCopy.dataset.state = 'copying';
+  try {
+    await navigator.clipboard.write([new ClipboardItem({
+      'text/html': new Blob([html], {type: 'text/html'}),
+      'text/plain': new Blob([plain], {type: 'text/plain'}),
+    })]);
+    copyStatus.textContent = message;
+  } catch {
+    fallback.value = html;
+    fallback.hidden = false;
+    fallback.select();
+    if (document.execCommand('copy')) {
+      fallback.hidden = true;
+      copyStatus.textContent = message;
+    } else copyStatus.textContent = `浏览器不允许自动复制，HTML 已放入下方文本框，请手动复制。${message}`;
+  }
+  wechatCopy.dataset.state = 'done';
+});

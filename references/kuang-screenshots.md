@@ -40,3 +40,14 @@
 11–14 来自大都会艺术博物馆的公开领域馆藏。11、13、14 先裁去扫描黑边或纸边，再用 Nano Banana 2.1 的 4K 模式放大。三张高清版分别为 6336 × 2688、6336 × 2688 和 4800 × 3584 像素。内置文件为 WebP，使用时按画布等比裁切。[The Met Open Access（CC0）](https://www.metmuseum.org/pt/hubs/open-access)
 
 在选项索引中维护编号和素材。图片入库前裁去扫描边，记录来源与许可，分配新编号。重新生成完整预览后检查左栏小样、右栏实拍和导出的 PNG。[选项索引](../assets/style-picker/catalog.json)
+
+## 实录 GIF 沿用同一套背景
+
+文章里讲菜单展开、滚动动画、切换规格、购物袋滑出这类变化时，用真实录屏导出的 GIF，背景、短边 8% 留白和 3% 内圆角与静态截图保持一致。用 [frame_media.py](../scripts/frame_media.py) 处理：
+
+```sh
+python -X utf8 scripts/frame_media.py frame 录屏.gif -o 录屏-framed.gif --background 01
+python -X utf8 scripts/frame_media.py inspect 录屏-framed.gif
+```
+
+`--background` 填本篇所选编号。脚本按 Dinamo 的几何与阴影在 Python 里重绘背景，细节与浏览器画布可能有细微差别，成品以打开后的实际画面为准。GIF 只有一位透明，外框圆角合成在白底上。`inspect` 检查：至少 2 帧且画面确有变化、无限循环、宽度（不足 640px 告警）和文件体积（超过 8 MB 告警），再人工打开确认界面小字清晰。源素材应取自实际网页、软件或本期视频，不用生成图片冒充。

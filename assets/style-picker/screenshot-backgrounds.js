@@ -89,7 +89,10 @@ function startScreenshotBackgrounds(form) {
     const sourceLinks = figure.querySelector('.screenshot-source');
     const exampleCredit = sourceLinks.querySelector('.screenshot-example-credit');
     const artworkCredit = sourceLinks.querySelector('[data-background-source]');
-    let screenshot = figure.querySelector('.screenshot-original');
+    const original = figure.querySelector('.screenshot-original');
+    const stage = figure.querySelector('.screenshot-stage');
+    const gifHint = '实录 GIF 请用 scripts/frame_media.py 导出带背景的成品，网页里只能导出静态 PNG';
+    let ownedUrl = null;
     let revision = 0;
     let fileRevision = 0;
     let loadingFile = false;
@@ -97,7 +100,8 @@ function startScreenshotBackgrounds(form) {
     async function draw() {
       const version = ++revision;
       const id = choices.value;
-      const source = screenshot;
+      const source = original;
+      const isGif = figure.classList.contains('is-gif');
       save.disabled = true;
       try {
         const [background] = await Promise.all([getBackground(id), source.decode()]);
@@ -129,7 +133,16 @@ function startScreenshotBackgrounds(form) {
         ctx.shadowColor = 'transparent';
         ctx.clip(clip);
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(source, inset, inset, w * scale, h * scale);
+        if (isGif) {
+          // Leave the white card empty: the animated <img> is laid over it so every frame keeps playing.
+          stage.style.setProperty('--gif-x', String(inset / width * 100));
+          stage.style.setProperty('--gif-y', String(inset / height * 100));
+          stage.style.setProperty('--gif-w', String(w * scale / width * 100));
+          stage.style.setProperty('--gif-h', String(h * scale / height * 100));
+          stage.style.setProperty('--gif-r', String(radius / width));
+        } else {
+          ctx.drawImage(source, inset, inset, w * scale, h * scale);
+        }
         const artwork = sources[id];
         artworkCredit.hidden = !artwork;
         if (artwork) {
@@ -138,7 +151,9 @@ function startScreenshotBackgrounds(form) {
           artworkCredit.textContent = `${name} · 馆藏原作`;
         }
         sourceLinks.hidden = artworkCredit.hidden && (!exampleCredit || exampleCredit.hidden);
-        save.disabled = loadingFile;
+        save.disabled = loadingFile || isGif;
+        if (isGif) status.textContent = gifHint;
+        else if (status.textContent === gifHint) status.textContent = '';
       } catch {
         if (version === revision) status.textContent = '无法显示这张截图或背景，请更换后重试';
       }
@@ -153,17 +168,27 @@ function startScreenshotBackgrounds(form) {
       save.disabled = true;
       status.textContent = '';
       const url = URL.createObjectURL(imageFile);
-      const image = new Image();
+      const probe = new Image();
       try {
-        image.src = url;
-        await image.decode();
-        if (version !== fileRevision) return;
-        screenshot = image;
+        probe.src = url;
+        await probe.decode();
+        if (version !== fileRevision) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        // The original <img> is the single source for both the canvas and the animated overlay.
+        if (ownedUrl) URL.revokeObjectURL(ownedUrl);
+        ownedUrl = url;
+        const gif = imageFile.type === 'image/gif';
+        original.src = url;
+        original.hidden = !gif;
+        figure.classList.toggle('is-gif', gif);
+        await original.decode();
         if (exampleCredit) exampleCredit.hidden = true;
       } catch {
-        if (version === fileRevision) status.textContent = '无法打开图片，请选择有效的 PNG、JPG 或 WebP';
-      } finally {
         URL.revokeObjectURL(url);
+        if (version === fileRevision) status.textContent = '无法打开图片，请选择有效的 PNG、JPG、WebP 或 GIF';
+      } finally {
         if (version === fileRevision) {
           loadingFile = false;
           await draw();

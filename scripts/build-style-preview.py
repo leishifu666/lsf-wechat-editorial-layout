@@ -4,7 +4,8 @@ import json
 from html import escape
 from pathlib import Path
 
-from article_preview import article_css, image_uri, load_article, render_article, render_image
+from article_preview import (VIDEO_TYPES, article_css, image_uri, layout_styles, load_article,
+                             render_article, render_image, video_uri)
 
 
 ASSETS = Path(__file__).resolve().parents[1] / "assets" / "style-picker"
@@ -160,7 +161,7 @@ def screenshot_tools(index, multiple=False):
     return f"""
 <div class="screenshot-tools" data-screenshot-controls>
   <label class="logo-picker">更换截图<input id="screenshot-file{suffix}" data-screenshot-file type="file"
-    aria-label="更换{label}" accept="image/png,image/jpeg,image/webp"></label>
+    aria-label="更换{label}" accept="image/png,image/jpeg,image/webp,image/gif"></label>
   <button type="button" id="screenshot-export{suffix}" data-screenshot-export aria-label="导出{label} PNG" disabled>导出 PNG</button>
   <p class="task-status" data-screenshot-status role="status"></p>
 </div>"""
@@ -196,14 +197,52 @@ def render_screenshot(block, index, multiple, bundled_sample):
     )
     anchor = ' id="preview-screenshot-background"' if index == 1 else ''
     caption = escape(block["caption"])
+    is_gif = bool(block.get("is_gif"))
+    info = block.get("gif_info") or {}
+    meta = (
+        f'<p class="gif-meta" data-gif-meta>实录 GIF · {info["frames"]} 帧 · {info["duration_ms"] / 1000:.1f} s · '
+        f'{"循环" if info["loop"] == "infinite" else "未循环"} · {info["width"]}×{info["height"]} · {info["megabytes"]} MB'
+        + "".join(f' · {escape(w)}' for w in info.get("warnings", [])) + '</p>'
+        if is_gif else ''
+    )
+    # The stage always holds the canvas and the original image. Recorded GIFs keep the <img> visible on top of
+    # the canvas so every frame plays inside the same background, padding and corner radius.
     return "\n".join([
-        f'<figure class="background-preview"{anchor}>',
+        f'<figure class="background-preview{" is-gif" if is_gif else ""}"{anchor}>',
+        '<div class="screenshot-stage">',
         f'<canvas class="screenshot-frame" role="img" aria-label="{caption or "加上所选背景的页面截图"}"></canvas>',
-        f'<img class="screenshot-original" src="{image_uri(block["screenshot"])}" hidden alt="">',
+        f'<img class="screenshot-original" src="{image_uri(block["screenshot"])}"{"" if is_gif else " hidden"} alt="{caption if is_gif else ""}">',
+        '</div>',
         f'<figcaption class="article-caption">{caption}</figcaption>' if caption else '',
+        meta,
         '<div class="screenshot-source" hidden>' + source
         + '<a data-background-source target="_blank" rel="noopener" hidden></a></div>',
         screenshot_tools(index, multiple=True) if multiple else '',
+        '</figure>',
+    ])
+
+
+def render_video(block, output_dir, opening):
+    """Local preview player plus a hidden placeholder that the rich-text copy uses instead of the local file."""
+    name = escape(block["video"].name)
+    caption = escape(block["caption"])
+    poster = f' poster="{image_uri(block["poster"])}"' if block.get("poster") else ""
+    kind = "opening" if opening else "inline"
+    place = ("请在此处（品牌署名之后、首段正文之前）通过公众号后台「视频」插入已确认成片："
+             if opening else "请在此处通过公众号后台「视频」插入本段对应的视频片段：")
+    note = ("本地成片预览，能播放不代表公众号原生视频已上传。复制到公众号时，视频不会随富文本带走，"
+            "会在品牌署名之后保留插入位置。" if opening else
+            "本地片段预览。复制到公众号时会在此处保留视频插入位置。")
+    anchor = ' id="preview-opening-video"' if opening else ""
+    return "\n".join([
+        f'<figure class="demo-video-figure{" opening-video" if opening else ""}"{anchor} data-wechat-video="{kind}"'
+        f' data-video-name="{name}">',
+        f'<video class="demo-video" controls playsinline preload="metadata"{poster}'
+        f' data-src="{video_uri(block["video"], output_dir)}" aria-label="{caption or name}"></video>',
+        f'<figcaption class="article-caption">{caption}</figcaption>' if caption else '',
+        f'<p class="video-preview-note" data-preview-only>{note}</p>',
+        f'<p class="wechat-video-placeholder" data-wechat-video-placeholder="{kind}" hidden>'
+        f'【公众号原生视频插入位置：{place}{name}】</p>',
         '</figure>',
     ])
 
@@ -245,6 +284,8 @@ def main():
     parser.add_argument("--intro-line", action="append", help="A confirmed opening line to preload (repeat up to 4 times)")
     parser.add_argument("--article-styles", type=Path, help="Path to article-styles catalog.json")
     parser.add_argument("--stage", choices=("pre-draft", "final"), default="pre-draft", help="Preview workflow stage")
+    parser.add_argument("--video", type=Path, help="The confirmed full video; placed after the wordmark and before the first paragraph")
+    parser.add_argument("--video-caption", default="", help="Optional caption under the opening video")
     args = parser.parse_args()
     if not args.author.strip():
         parser.error("--author must contain a name")
@@ -255,6 +296,11 @@ def main():
     sample = args.article is None
     try:
         article = load_article(args.article or ASSETS / "sample-article.json")
+        if args.video:
+            if not args.video.is_file() or args.video.suffix.lower() not in VIDEO_TYPES:
+                raise ValueError(f"视频必须是存在的 mp4 / webm / mov：{args.video}")
+            article["video"] = {"video": args.video, "caption": args.video_caption.strip().rstrip("。."),
+                                "poster": article["video"]["poster"] if article["video"] else None}
         blocks = [article["intro"], *(chapter["paragraphs"] for chapter in article["chapters"])]
         screenshots = [block for group in blocks for block in group
                        if isinstance(block, dict) and "screenshot" in block]
@@ -263,8 +309,10 @@ def main():
                 raise ValueError(f"截图必须是存在的 PNG、JPG 或 WebP：{args.screenshot}")
             if screenshots:
                 screenshots[0]["screenshot"] = args.screenshot
+                screenshots[0]["is_gif"] = False
+                screenshots[0].pop("gif_info", None)
             else:
-                block = {"screenshot": args.screenshot, "caption": ""}
+                block = {"screenshot": args.screenshot, "caption": "", "is_gif": False}
                 article["intro"].append(block)
                 screenshots.append(block)
     except (OSError, ValueError) as error:
@@ -318,8 +366,13 @@ def main():
 
     bundle = f'<script>{INTRO_BUNDLE.read_text(encoding="utf-8")}</script>' if "intro" in groups else ""
     intro_styles = f'<style>{INTRO_BUNDLE.with_suffix(".css").read_text(encoding="utf-8")}</style>' if "intro" in groups else ""
+    output_dir = args.output.resolve().parent
+    opening_video = render_video(article["video"], output_dir, True) if article["video"] else ""
+    layout_json = json.dumps(layout_styles(), ensure_ascii=False).replace("</", "<\\/")
     additions = {
-        "ARTICLE": render_article(article, intro, chapter_markers, screenshot, footer, sample),
+        "ARTICLE": render_article(article, intro, chapter_markers, screenshot, footer, sample,
+                                  opening_video=opening_video,
+                                  video=lambda block: render_video(block, output_dir, False)),
         "DRAFT ATTRIBUTE": "" if sample else " data-draft",
         "OPTIONS": "\n".join(sections),
         "PRESET NAV": (
@@ -328,7 +381,8 @@ def main():
             if args.group == "all" else ""
         ),
         "PRESETS": PRESETS if args.group == "all" else "",
-        "PICKER STYLES": f'<style>{(ASSETS / "board.css").read_text(encoding="utf-8")}\n{article_css()}</style>',
+        "PICKER STYLES": (f'<style>{(ASSETS / "board.css").read_text(encoding="utf-8")}\n{article_css()}</style>'
+                          f'<script type="application/json" id="article-layout-styles">{layout_json}</script>'),
         "PICKER SCRIPT": "<script>\n" + "\n".join(
             (ASSETS / file).read_text(encoding="utf-8")
             for file in (("screenshot-backgrounds.js", "board.js") if "backgrounds" in groups else ("board.js",))

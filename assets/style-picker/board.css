@@ -250,3 +250,17 @@ input[type=text]:focus-visible,textarea:focus-visible{outline:0;box-shadow:inset
 .choice-style-card .style-tagline{font-size:12px;line-height:1.45;font-weight:400;color:#4E545F;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .choice-style-card .style-quote{margin-top:auto;padding-top:7px;border-top:1px solid var(--line);font-size:11px;line-height:1.35;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:719px){.choices-article-style{grid-template-columns:minmax(0,1fr)}}
+
+/* ===== 开篇视频、实录 GIF、复制到公众号 ===== */
+.copy-wechat-button{order:2;height:40px;flex-shrink:0}
+@media (max-width:719px){.copy-wechat-button{height:44px}}
+.article-body .demo-video-figure{margin:0 0 24px}
+.article-body .demo-video-figure .article-caption{margin-bottom:8px}
+.article-body .demo-video{max-height:80vh;object-fit:contain}
+.article-body .video-preview-note,.article-body .gif-meta{margin:8px 0 0;padding:8px 12px;border-radius:6px;background:var(--pill);color:var(--mute);font:12px/1.5 var(--sans);letter-spacing:0;text-align:left}
+.article-body .gif-meta{margin:0 0 18px}
+.article-body .wechat-video-placeholder[hidden]{display:none!important}
+.screenshot-stage{position:relative;margin:16px 0 0;container-type:inline-size}
+.article-body .screenshot-stage .screenshot-frame{margin:0;max-width:100%}
+.screenshot-stage .screenshot-gif-overlay,.is-gif .screenshot-original{position:absolute;display:block;left:calc(var(--gif-x,0) * 1%);top:calc(var(--gif-y,0) * 1%);width:calc(var(--gif-w,100) * 1%);height:calc(var(--gif-h,100) * 1%);border-radius:calc(var(--gif-r,0) * 100cqw);object-fit:fill;pointer-events:none}
+.background-preview:not(.is-gif) .screenshot-original{display:none}
