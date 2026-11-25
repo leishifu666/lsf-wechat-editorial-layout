@@ -194,3 +194,4 @@ export async function prepareLogo(file) {
     bitmap.close();
   }
 }
+

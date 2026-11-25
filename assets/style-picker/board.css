@@ -28,6 +28,12 @@ a{color:inherit}
 .preset-nav{display:none}
 
 .bench{overflow:auto;padding:var(--top) var(--gut) 0;display:flex;flex-direction:column;gap:32px;scroll-padding:var(--top) 0 var(--bar);overscroll-behavior:contain}
+.stage-banner{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:6px;background:var(--paper);border:1px solid var(--line);font-size:12px;line-height:1.45;color:var(--mute)}
+.stage-banner strong{color:var(--ink);font-weight:600;flex-shrink:0}
+html[data-stage="pre-draft"] .stage-banner{border-color:color-mix(in srgb,var(--hot) 28%,var(--line))}
+html[data-stage="pre-draft"] .stage-banner strong{color:var(--hot)}
+html[data-stage="final"] .copy-wechat-button{background:var(--ink);color:var(--paper);box-shadow:none;font-weight:600}
+html[data-stage="final"] .copy-wechat-button:hover{background:#2A2A2D;color:var(--paper);box-shadow:none}
 #style-selection,[data-intro-wordmark]{min-width:0;margin:0}
 
 /* ===== 分组：标题 + 已选 + 翻页 ===== */

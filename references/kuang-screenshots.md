@@ -2,7 +2,7 @@
 
 实际截取页面或软件画面，保留解释步骤所需的内容。背景用于公众号正文的截图配图；单独设计的封面和示意图按本篇需求决定。
 
-在 [Dinamo 选样页](style-picker.md#截图背景) 更换截图、选背景、导出 PNG。所有预设、图片及导出代码均在 Skill 内；离线 HTML 可以直接打开使用。每款都按源截图短边的 8% 留出等宽边，内图圆角为短边的 3%，外框圆角以透明 PNG 输出。默认「01 日落」保留暖色光晕。导出后打开 PNG，确认界面文字可辨、没有裁切，图注另排。
+在 [Dinamo 选样页](style-picker.md#截图背景) 更换截图、选背景、导出 PNG。所有预设、图片及导出代码均在 Skill 内；离线 HTML 可以直接打开使用。每款默认按源截图短边的 3.5% 留出紧凑等宽边，内图圆角为短边的 2.5%，外框圆角以透明 PNG 输出。默认「A04 普尔维尔悬崖漫步 · 莫奈」。导出后打开 PNG，确认界面文字可辨、没有裁切，图注另排。
 
 | 编号 | 背景 | 来源 |
 | --- | --- | --- |
@@ -43,10 +43,10 @@
 
 ## 实录 GIF 沿用同一套背景
 
-文章里讲菜单展开、滚动动画、切换规格、购物袋滑出这类变化时，用真实录屏导出的 GIF，背景、短边 8% 留白和 3% 内圆角与静态截图保持一致。用 [frame_media.py](../scripts/frame_media.py) 处理：
+文章里讲菜单展开、滚动动画、切换规格、购物袋滑出这类变化时，用真实录屏导出的 GIF，背景、短边 3.5% 留白和 2.5% 内圆角与静态截图保持一致。用 [frame_media.py](../scripts/frame_media.py) 处理：
 
 ```sh
-python -X utf8 scripts/frame_media.py frame 录屏.gif -o 录屏-framed.gif --background 01
+python -X utf8 scripts/frame_media.py frame 录屏.gif -o 录屏-framed.gif --background A04
 python -X utf8 scripts/frame_media.py inspect 录屏-framed.gif
 ```
 

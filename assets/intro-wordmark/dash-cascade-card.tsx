@@ -48,3 +48,4 @@ export default function DashCascadeCard({scenes, lines}: {scenes: DashScene[]; l
     <canvas ref={canvas} style={{display: 'block', width: '100%', height: '100%'}}/>
   </div>;
 }
+

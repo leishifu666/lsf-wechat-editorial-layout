@@ -5,8 +5,8 @@ Usage:
   python -X utf8 scripts/frame_media.py frame 截图.png -o 截图-framed.png --background 01
   python -X utf8 scripts/frame_media.py inspect 录屏-framed.gif
 
-Geometry follows the Dinamo screenshot export: margin = 8% of the shorter side,
-inner radius = 3% of the shorter side, soft shadow, rounded outer frame.
+Geometry follows the Dinamo screenshot export: margin = 3.5% of the shorter side,
+inner radius = 2.5% of the shorter side, soft shadow, rounded outer frame.
 Static PNG output keeps a transparent outer corner. GIF only has 1-bit
 transparency, so GIF corners are composited on white (the WeChat article page).
 """
@@ -21,7 +21,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageSequence
 
 PICKER = Path(__file__).resolve().parents[1] / "assets" / "style-picker"
 BACKGROUND_DIR = PICKER / "backgrounds"
-DEFAULT_BACKGROUND = "01"
+DEFAULT_BACKGROUND = "A04"
 STATIC_TYPES = {".png", ".jpg", ".jpeg", ".webp"}
 # 建议阈值：公众号单张图片按 10 MB 以内准备；本脚本 8 MB 以内算通过，超出给出告警。
 GIF_SIZE_WARN_BYTES = 8 * 1024 * 1024
@@ -101,12 +101,12 @@ def paint_background(background_id, width, height):
 
 # --------------------------------------------------------------------- framing
 def _geometry(w, h, max_width):
-    border = min(w, h) * .08
+    border = min(w, h) * .035
     scale = min(max_width / (w + 2 * border), 4096 / (h + 2 * border), 1.0)  # never upscale
     width, height = round((w + 2 * border) * scale), round((h + 2 * border) * scale)
     inset = border * scale
     inner_w, inner_h = round(w * scale), round(h * scale)
-    radius = min(w, h) * scale * .03
+    radius = min(w, h) * scale * .025
     outer = min(32, radius + inset / 3)
     return width, height, round(inset), inner_w, inner_h, radius, outer
 
@@ -222,7 +222,7 @@ def main():
     framing = sub.add_parser("frame", help="给截图或实录 GIF 加统一背景、留白和圆角")
     framing.add_argument("source", type=Path)
     framing.add_argument("-o", "--output", type=Path, required=True)
-    framing.add_argument("--background", default=DEFAULT_BACKGROUND, help="背景编号，沿用本篇所选，默认 01")
+    framing.add_argument("--background", default=DEFAULT_BACKGROUND, help="背景编号，沿用本篇所选，默认 A04")
     framing.add_argument("--max-width", type=int, help="导出宽度上限，PNG 默认 1200，GIF 默认 900")
     framing.add_argument("--overwrite", action="store_true")
     checking = sub.add_parser("inspect", help="检查实录 GIF 的帧数、循环、尺寸和体积")

@@ -230,3 +230,4 @@ export class DashCascade {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 }
+

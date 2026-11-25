@@ -84,7 +84,7 @@ def group_heading(group):
 
 def render_group(group, options):
     choices = [
-        render_choice(group, option, checked=index == 0, samples=(
+        render_choice(group, option, checked=option["id"] == "02", samples=(
             "".join(f'<img alt="" src="{image_uri(path)}">' for path, _ in samples_for(option)[:4])
             if group == "chapters" else ""
         ))
@@ -131,7 +131,7 @@ def render_chapter(index, options):
         style = folder / styles[(index - 1) % len(styles)]
         label = chapter_label(index, option["mode"])
         glyphs = "".join(f'<img alt="" src="{image_uri(style / (glyph + ".gif"))}">' for glyph in label)
-        hidden = "" if option is options[0] else " hidden"
+        hidden = "" if option["id"] == "02" else " hidden"
         parts.append(f'<span class="chapter-glyphs" role="img" aria-label="{label}" data-effect="chapters"'
                      f' data-option="{escape(option["id"])}"{hidden}>{glyphs}</span>')
     return "".join(parts)
@@ -176,7 +176,7 @@ def render_backgrounds(options, screenshot_count):
     sources = {option["id"]: [option["name"], option["source"]] for option in options if "source" in option}
 
     choices = [
-        render_choice("screenshot-background", option, checked=option["id"] == options[0]["id"], kind=title)
+        render_choice("screenshot-background", option, checked=option["id"] == "A04", kind=title)
         for key, title in (("aura", "渐变"), ("artwork", "图片"))
         for option in options if key in option
     ]
@@ -256,7 +256,7 @@ def render_article_styles(options):
         quote = escape(option.get("sample_quote", ""))
         rule_file = escape(option.get("rule_file", ""))
         slug = escape(option.get("slug", ""))
-        checked = " checked" if index == 0 else ""
+        checked = " checked" if option["id"] == "02" else ""
         choices.append(
             f'<label class="choice"><input type="radio" name="article-style" value="{option_id}"'
             f' data-rule="{rule_file}" data-slug="{slug}"{checked}>'
@@ -280,7 +280,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--article", type=Path, help="UTF-8 article JSON with text and local images")
     parser.add_argument("--screenshot", type=Path, help="Preview a different real screenshot")
-    parser.add_argument("--author", default="雷师傅", help="Default intro wordmark text")
+    parser.add_argument("--author", default="LSF_DESIGN", help="Default intro wordmark text")
     parser.add_argument("--intro-line", action="append", help="A confirmed opening line to preload (repeat up to 4 times)")
     parser.add_argument("--article-styles", type=Path, help="Path to article-styles catalog.json")
     parser.add_argument("--stage", choices=("pre-draft", "final"), default="pre-draft", help="Preview workflow stage")
@@ -354,7 +354,7 @@ def main():
             sections.append(render_group(group, catalog[group]))
             for index, option in enumerate(catalog[group]):
                 if option.get("directory"):
-                    stickers.append(render_sample(group, option, samples_for(option)[0], index == 0))
+                    stickers.append(render_sample(group, option, samples_for(option)[0], option["id"] == "02"))
     footer = f'<footer class="demo-footer" id="preview-stickers">{"".join(stickers)}</footer>' if stickers else ""
     screenshot_indices = iter(range(1, len(screenshots) + 1))
 
@@ -369,7 +369,16 @@ def main():
     output_dir = args.output.resolve().parent
     opening_video = render_video(article["video"], output_dir, True) if article["video"] else ""
     layout_json = json.dumps(layout_styles(), ensure_ascii=False).replace("</", "<\\/")
+    stage_banner = (
+        '<div class="stage-banner" role="note"><strong>写稿前选样</strong>'
+        '<span>先选定文章风格与版式，点「复制选择」回传对话，Agent 将按所选文风撰写初稿并完成四层自检。</span></div>'
+        if args.stage == "pre-draft" else
+        '<div class="stage-banner" role="note"><strong>正式排版预览</strong>'
+        '<span>核对正文、配图与动效后可直接点「复制到公众号」，或点「复制选择」回传版式微调意见。</span></div>'
+    )
     additions = {
+        "STAGE ATTRIBUTE": f' data-stage="{escape(args.stage)}"',
+        "STAGE BANNER": stage_banner,
         "ARTICLE": render_article(article, intro, chapter_markers, screenshot, footer, sample,
                                   opening_video=opening_video,
                                   video=lambda block: render_video(block, output_dir, False)),

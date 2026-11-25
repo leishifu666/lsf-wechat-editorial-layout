@@ -107,12 +107,12 @@ function startScreenshotBackgrounds(form) {
         const [background] = await Promise.all([getBackground(id), source.decode()]);
         if (version !== revision) return;
         const {naturalWidth: w, naturalHeight: h} = source;
-        const border = Math.min(w, h) * .08;
+        const border = Math.min(w, h) * .035;
         const scale = Math.min(1200 / (w + 2 * border), 4096 / (h + 2 * border));
         const width = canvas.width = Math.round((w + 2 * border) * scale);
         const height = canvas.height = Math.round((h + 2 * border) * scale);
         const inset = border * scale;
-        const radius = Math.min(w, h) * scale * .03;
+        const radius = Math.min(w, h) * scale * .025;
         const ctx = canvas.getContext('2d');
         ctx.beginPath();
         ctx.roundRect(0, 0, width, height, Math.min(32, radius + inset / 3));

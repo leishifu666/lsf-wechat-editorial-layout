@@ -52,3 +52,4 @@ export function dashCascadeProps(lines: string[]) {
   });
   return { scenes, lines };
 }
+

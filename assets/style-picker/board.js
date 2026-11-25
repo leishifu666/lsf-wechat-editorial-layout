@@ -482,7 +482,12 @@ form.addEventListener('submit', async event => {
     lines.push(`${title}：${selected.closest('.choice').querySelector('.choice-name').textContent}`);
     if (selected.name === 'article-style') {
       if (selected.dataset.rule) lines.push(`文章风格规则：${selected.dataset.rule}`);
-      lines.push('写作流程：请先按所选文章风格规则撰写/改写公众号初稿并完成四层自检，再按以下排版样式成稿');
+      const stage = document.documentElement.dataset.stage || 'pre-draft';
+      if (stage === 'final') {
+        lines.push('当前阶段：正式排版成稿（仅应用本次确认的版式微调，不重写已定稿正文）');
+      } else {
+        lines.push('写作流程：请先按所选文章风格规则撰写/改写公众号初稿并完成四层自检，再按以下排版样式成稿');
+      }
     }
     if (intro && group.contains(intro)) {
       const state = intro.readIntroState?.();
